@@ -3,7 +3,24 @@
 {% block content %}
 <style>
 /* Full Screen Overlay */
-
+.start-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--background);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.start-content {
+    background: var(--surface);
+    padding: 4rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+}
 
 .exam-layout {
     display: grid;
@@ -241,9 +258,20 @@
 @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
 </style>
 
+<div id="start-overlay" class="start-overlay">
+    <div class="start-content">
+        <h2 style="font-size: 2rem; margin-bottom: 1rem;">Ready to begin?</h2>
+        <p class="text-muted" style="margin-bottom: 2rem; font-size: 1.1rem; line-height: 1.6;">
+            This exam is monitored and requires full-screen mode. <br>
+            The interface mirrors the official JEE Mains format.
+        </p>
+        <button type="button" class="btn btn-primary" id="btn-start-exam" style="font-size: 1.25rem; padding: 1rem 3rem;">
+            Begin Exam
+        </button>
+    </div>
+</div>
 
-
-<div class="exam-layout" id="exam-main-container">
+<div class="exam-layout" id="exam-main-container" style="display: none;">
     <div class="exam-main">
         <form action="{{ url_for('take_exam', exam_id=exam.id) }}" method="POST" id="exam-form">
             
@@ -313,7 +341,7 @@
     const timerDisplay = document.getElementById('timer');
     const examForm = document.getElementById('exam-form');
     let timerInterval = null;
-    let hasExamStarted = true;
+    let hasExamStarted = false;
     let isSubmitting = false;
 
     // SPA Logic
@@ -439,11 +467,39 @@
         timeRemaining--;
     }
     
-    // Init state immediately
-    showQuestion(1);
-    hasExamStarted = true;
-    updateTimer();
-    timerInterval = setInterval(updateTimer, 1000);
+    document.getElementById('btn-start-exam').addEventListener('click', () => {
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(()=>{});
+        }
+        
+        document.getElementById('start-overlay').style.display = 'none';
+        document.getElementById('exam-main-container').style.display = 'grid';
+        hasExamStarted = true;
+        
+        // Init state
+        showQuestion(1);
+        
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+        if (hasExamStarted && !isSubmitting && !document.fullscreenElement) {
+            alert("⚠️ WARNING: You have exited full-screen mode! Please do not exit full screen during the exam.");
+        }
+    });
+    
+    window.addEventListener('beforeunload', (e) => {
+        if (hasExamStarted && !isSubmitting) { }
+    });
+    
+    examForm.addEventListener('submit', () => {
+        isSubmitting = true;
+        window.removeEventListener('beforeunload', () => {});
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(()=>{});
+        }
+    });
 
 </script>
 {% endblock %}

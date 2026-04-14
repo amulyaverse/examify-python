@@ -104,7 +104,7 @@ def upload():
                 # Create Exam
                 new_exam = Exam(
                     title=title,
-                    duration=int(duration),
+                    duration=float(duration),
                     created_by=session['user_id']
                 )
                 db.session.add(new_exam)

@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Deep Analysis - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* Analysis Dashboard Specific Styles */
+.analysis-body {
+    background-color: var(--background);
+    padding-top: 6rem;
+    min-height: 100vh;
+}
+
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sidebar Styling */
+.sidebar {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    height: fit-content;
+    position: sticky;
+    top: 6rem;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nav-item {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover, .nav-item.active {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+}
+
+.nav-item.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+}
+
+/* Grid layout for Cards */
+.top-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-title {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+/* Circular Progress */
+.progress-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(var(--primary) var(--progress), var(--border) 0deg);
+}
+
+.progress-circle::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: var(--surface);
+}
+
+.progress-value {
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+/* Sections */
+.dashboard-section {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* AI Alert Box */
+.ai-alert {
+    background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(147,51,234,0.1));
+    border: 1px solid rgba(147,51,234,0.2);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.ai-alert-title {
+    color: var(--secondary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.badge-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.badge-green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.badge-yellow { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+
+</style>
+
+<div class="analysis-body">
+    <div class="dashboard-layout animate-fade-in-up">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <h3 class="mb-4 text-center">Dashboard</h3>
+            <nav class="sidebar-nav">
+                <div class="nav-item active" onclick="switchTab('overview')">📊 Overview</div>
+                <div class="nav-item" onclick="switchTab('comparison')">👥 Class Comparison</div>
+                <div class="nav-item" onclick="switchTab('ai-insights')">🧠 AI Insights & Weaknesses</div>
+                <div class="nav-item" onclick="switchTab('study-plan')">📅 Study Plan</div>
+            </nav>
+            <div class="mt-8 text-center">
+                <button class="btn btn-outline w-full" onclick="window.print()">📥 Export PDF</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="mb-8">
+                <h1 style="font-size: 2.5rem; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; color: transparent;">
+                    Performance Analysis
+                </h1>
+                <p class="text-muted text-lg">{{ exam.title }} • {{ result.created_at.strftime('%B %d, %Y') }}</p>
+            </div>
+
+            <!-- OVERVIEW TAB -->
+            <div id="tab-overview" class="tab-pane">
+                <div class="top-cards">
+                    <div class="metric-card">
+                        <div class="card-title">Accuracy</div>
+                        <div class="progress-circle" style="--progress: {{ analytics.accuracy }}%; {% if analytics.accuracy > 75 %}--primary: #22c55e;{% elif analytics.accuracy > 50 %}--primary: #eab308;{% else %}--primary: #ef4444;{% endif %}">
+                            <div class="progress-value">{{ analytics.accuracy }}%</div>
+                        </div>
+                        <div class="mt-4 text-sm text-muted">Correct: {{ result.correct_answers }}</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="card-title">Percentile</div>
+                        <div class="progress-circle" style="--progress: {{ analytics.percentile }}%; --primary: #3b82f6;">
+                            <div class="progress-value">{{ analytics.percentile }}</div>
+                        </div>
+                        <div class="mt-4 text-sm text-muted">Top {{ 100 - analytics.percentile }}%</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="card-title">Score</div>
+                        <div class="progress-circle" style="--progress: {{ (result.obtained_score / result.total_score * 100)|int }}%; --primary: #9333ea;">
+                            <div class="progress-value">{{ result.obtained_score }}</div>
+                        </div>
+                        <div class="mt-4 text-sm text-muted">Out of {{ result.total_score }}</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="card-title">Pot. Improvement</div>
+                        <div class="progress-circle" style="--progress: {{ analytics.improvement_potential }}%; --primary: #f59e0b;">
+                            <div class="progress-value">+{{ analytics.improvement_potential - analytics.accuracy }}%</div>
+                        </div>
+                        <div class="mt-4 text-sm text-muted">Fixing silly mistakes</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="section-title">⏱️ Time Management Profile</div>
+                    <p class="text-muted mb-4">You spent {{ analytics.time_taken_mins }} minutes on this exam. Your speed vs accuracy suggests you are rushing through calculation-heavy problems.</p>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPARISON TAB -->
+            <div id="tab-comparison" class="tab-pane" style="display: none;">
+                <div class="dashboard-section">
+                    <div class="section-title">📈 You vs The World</div>
+                    <div class="ai-alert mb-8">
+                        <div class="ai-alert-title">✨ AI insight</div>
+                        <p>You scored <strong>{{ result.obtained_score - analytics.avg_score }} marks above average</strong>. However, to reach the top 1%, you need to bridge a gap of {{ analytics.topper_score - result.obtained_score }} marks, primarily in the areas you skipped.</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI INSIGHTS TAB -->
+            <div id="tab-ai-insights" class="tab-pane" style="display: none;">
+                <div class="dashboard-section">
+                    <div class="section-title">🚨 Areas Needing Immediate Attention</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for area in analytics.weak_areas %}
+                        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.5rem; background: var(--background);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h4 style="margin: 0;">{{ area.topic }}</h4>
+                                <span class="badge badge-red">{{ area.accuracy }}% Accuracy</span>
+                            </div>
+                            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">
+                                <strong>Diagnosis:</strong> {{ area.reason }}
+                            </p>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">
+                                <em>Time spent factor: {{ area.time_multiplier }}x average</em>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="section-title">🧩 Mistake Pattern Detection</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="mistakeChart"></canvas>
+                        </div>
+                        <div>
+                            <ul style="list-style-position: inside; color: var(--text-muted); display:flex; flex-direction: column; gap: 0.75rem;">
+                                <li><strong>Conceptual:</strong> Fundamental misunderstandings.</li>
+                                <li><strong>Calculation:</strong> Math errors in intermediate steps.</li>
+                                <li><strong>Silly Mistakes:</strong> Rushing or misreading the question.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STUDY PLAN TAB -->
+            <div id="tab-study-plan" class="tab-pane" style="display: none;">
+                <div class="dashboard-section">
+                    <div class="section-title">🚀 Personalized Path to {{ analytics.improvement_potential }}%</div>
+                    <p class="text-muted mb-6">Based on your weak areas and mistake patterns, our AI recommends the following targeted study plan to maximize your score improvement efficiently.</p>
+                    
+                    <div style="border-left: 4px solid var(--primary); padding-left: 2rem; display: flex; flex-direction: column; gap: 2rem; position: relative;">
+                        {% for plan in analytics.study_plan %}
+                        <div style="position: relative;">
+                            <div style="position: absolute; left: -2.7rem; top: 0; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--secondary); border: 4px solid var(--surface);"></div>
+                            <h4 style="color: var(--primary); margin-bottom: 0.5rem;">{{ plan.day }}</h4>
+                            <p style="background: var(--background); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
+                                {{ plan.task }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button class="btn btn-primary" onclick="alert('Added to your calendar!')">Sync with Calendar</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+// Tab Switching Logic
+function switchTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
+    // Remove active class from nav
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    // Show selected tab
+    document.getElementById('tab-' + tabId).style.display = 'block';
+    // Highlight nav
+    event.currentTarget.classList.add('active');
+}
+
+// Chart Configurations
+document.addEventListener('DOMContentLoaded', function() {
+    
+    Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#64748b';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    // Data passed from flask mapped to js
+    const obtainedScore = {{ result.obtained_score }};
+    const avgScore = {{ analytics.avg_score }};
+    const topperScore = {{ analytics.topper_score }};
+    const mistakes = {{ analytics.mistake_patterns | tojson | safe }};
+
+    // 1. Comparison Bar Chart
+    const ctxComp = document.getElementById('comparisonChart');
+    if(ctxComp) {
+        new Chart(ctxComp, {
+            type: 'bar',
+            data: {
+                labels: ['Your Score', 'Average', 'Topper'],
+                datasets: [{
+                    label: 'Marks',
+                    data: [obtainedScore, avgScore, topperScore],
+                    backgroundColor: [
+                        'rgba(147, 51, 234, 0.8)', // secondary
+                        'rgba(100, 116, 139, 0.6)', // slate
+                        'rgba(59, 130, 246, 0.8)'   // blue
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 2. Mistake Pattern Doughnut Chart
+    const ctxMistake = document.getElementById('mistakeChart');
+    if(ctxMistake) {
+        new Chart(ctxMistake, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(mistakes),
+                datasets: [{
+                    data: Object.values(mistakes),
+                    backgroundColor: [
+                        '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    // 3. Time Management Scatter Plot (Dummy points for visual effect)
+    const ctxTime = document.getElementById('timeChart');
+    if(ctxTime) {
+        new Chart(ctxTime, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Correct Questions',
+                    data: [{x: 45, y: 1}, {x: 60, y: 2}, {x: 120, y: 3}],
+                    backgroundColor: '#22c55e'
+                }, {
+                    label: 'Incorrect Questions',
+                    data: [{x: 200, y: 1}, {x: 30, y: 2}], // Fast mistakes and stuck
+                    backgroundColor: '#ef4444'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'Time Spent (seconds)' } },
+                    y: { title: { display: true, text: 'Question Difficulty' }, min: 0, max: 5 }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.result-container {
+    padding: 8rem 0 4rem;
+    max-width: 800px;
+}
+
+.result-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 3rem;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
+}
+
+.score-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 12px solid var(--border);
+    margin: 0 auto 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.score-circle.excellent { border-color: #22c55e; } /* green-500 */
+.score-circle.good { border-color: #3b82f6; } /* blue-500 */
+.score-circle.average { border-color: #eab308; } /* yellow-500 */
+.score-circle.poor { border-color: #ef4444; } /* red-500 */
+
+.score-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.stat-item {
+    padding: 1rem;
+    background: var(--background);
+    border-radius: var(--radius-md);
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.answer-review {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 2rem;
+}
+
+.review-item {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px dashed var(--border);
+}
+.review-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.answer-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+.answer-tag.correct { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.answer-tag.wrong { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.answer-tag.unanswered { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+
+</style>
+
+<div class="container result-container animate-fade-in-up">
+    
+    <div class="result-card">
+        <h2 style="margin-bottom: 0.5rem;">Exam Result: {{ exam.title }}</h2>
+        <p class="text-muted mb-8">Completed on {{ result.created_at.strftime('%B %d, %Y') }}</p>
+        
+        {% set color_class = 'poor' %}
+        {% if result.percentage >= 90 %}
+            {% set color_class = 'excellent' %}
+        {% elif result.percentage >= 70 %}
+            {% set color_class = 'good' %}
+        {% elif result.percentage >= 50 %}
+            {% set color_class = 'average' %}
+        {% endif %}
+        
+        <div class="score-circle {{ color_class }}">
+            <div class="score-value">{{ "%.1f"|format(result.percentage) }}%</div>
+            <div class="text-muted mt-2">Final Score</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="text-muted">Total Marks</div>
+                <div class="stat-value">{{ result.obtained_score }} / {{ result.total_score }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="text-muted" style="color: #22c55e;">Correct</div>
+                <div class="stat-value">{{ result.correct_answers }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="text-muted" style="color: #ef4444;">Incorrect</div>
+                <div class="stat-value">{{ result.wrong_answers }}</div>
+            </div>
+        </div>
+        
+        <div class="mt-8" style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+            <a href="{{ url_for('view_analysis', result_id=result.id) }}" class="btn btn-primary" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none;">
+                <span style="margin-right: 8px;">✨</span> View Deep AI Analysis
+            </a>
+        </div>
+    </div>
+    
+    <!-- Answer Review could be expanded here if we iterate over questions, but we need questions loaded for that.
+         For a simple clone, the visual dashboard breakdown is enough as per Result structure. -->
+    <div class="text-center text-muted">
+        <p>Detailed question review is available to premium members.</p>
+    </div>
+</div>
+{% endblock %}

@@ -64,7 +64,7 @@ def parse_questions_with_ai(text):
     """
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         # Clean potential markdown
         res_text = response.text.replace('```json', '').replace('```', '').strip()
@@ -97,7 +97,7 @@ def chat_with_agent(message, history=None):
     prompt = f"{prompt_instruction}\n\nRecent Conversation:\n{formatted_history}\nUser: {message}\nAgent:"
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:

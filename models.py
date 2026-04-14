@@ -29,7 +29,7 @@ class Question(db.Model):
     options = db.Column(db.JSON, nullable=False) # list of strings
     correct_answer = db.Column(db.String(500), nullable=False)
     marks = db.Column(db.Integer, default=1)
-
+    difficulty = db.Column(db.String(20), default='medium')
 
 class Result(db.Model):
     id = db.Column(db.Integer, primary_key=True)

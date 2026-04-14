@@ -24,7 +24,7 @@ def extract_text_from_pdf(pdf_path):
         print(f"Error reading PDF: {e}")
     return text
 
-def parse_questions_with_ai(text):
+def parse_questions_with_ai(text, exam_type='general'):
     if not API_KEY:
         # Dummy fallback if no API key is provided
         return [
@@ -32,27 +32,47 @@ def parse_questions_with_ai(text):
                 "question": "Sample Question 1 extracted from PDF",
                 "options": ["Option A", "Option B", "Option C", "Option D"],
                 "correct_answer": "Option A",
-                "marks": 1
+                "marks": 1,
+                "difficulty": "medium"
             },
             {
                 "question": "Sample Question 2 extracted from PDF",
                 "options": ["True", "False"],
                 "correct_answer": "True",
-                "marks": 1
+                "marks": 1,
+                "difficulty": "easy"
             }
         ]
         
-    prompt_instruction = """
-    You are an expert exam parser. I will provide you with the raw text extracted from a question paper PDF.
-    Your task is to extract all the multiple choice questions and return them as a valid JSON array.
-    Each object in the array should have the following exact schema:
-    {
-        "question": "The question text",
-        "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-        "correct_answer": "The exact string of the correct option. Guess if not provided in the text.",
-        "marks": 1
-    }
-    """
+    if exam_type == 'jee':
+        prompt_instruction = """
+        You are an expert exam parser extracting from a JEE Mains paper. 
+        Your task is to extract Physics, Chemistry, and Mathematics multiple choice questions.
+        If the paper is a JEE Mains paper, ensure extreme accuracy with formulas written in readable text or LaTeX.
+        Analyze the question and assign a difficulty level ("easy", "medium", or "hard").
+        Each object in the array should have the following exact schema:
+        {
+            "question": "The question text (Physics/Chemistry/Maths)",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "correct_answer": "The exact string of the correct option.",
+            "marks": 4,
+            "difficulty": "hard"
+        }
+        """
+    else:
+        prompt_instruction = """
+        You are an expert exam parser. I will provide you with the raw text extracted from a question paper PDF.
+        Your task is to extract all the multiple choice questions and return them as a valid JSON array.
+        Analyze the question and assign a difficulty level ("easy", "medium", or "hard").
+        Each object in the array should have the following exact schema:
+        {
+            "question": "The question text",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "correct_answer": "The exact string of the correct option. Guess if not provided in the text.",
+            "marks": 1,
+            "difficulty": "medium"
+        }
+        """
 
     prompt = f"""
     {prompt_instruction}

@@ -2,30 +2,121 @@
 
 {% block content %}
 <style>
-.exam-container {
-    max-width: 800px;
+/* Full Screen Overlay */
+
+
+.exam-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+    padding: 6rem 0 4rem;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 8rem 0 4rem;
 }
-.exam-card {
+
+@media (max-width: 900px) {
+    .exam-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.exam-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.exam-sidebar {
+    position: sticky;
+    top: 5rem;
+    align-self: start;
+    z-index: 10;
+}
+
+.exam-header {
     background: var(--surface);
+    padding: 1rem 1.5rem;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
-    padding: 2.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
+
+.timer {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ef4444; 
+    font-variant-numeric: tabular-nums;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+}
+
+.question-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 2.5rem;
+    flex-grow: 1;
+    min-height: 400px;
+}
+
+.jee-actions-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.jee-btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+.btn-save-next {
+    background: #10b981;
+    color: white;
+}
+.btn-save-next:hover { background: #059669; }
+
+.btn-clear {
+    background: white;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+.btn-clear:hover { background: #f8fafc; border-color: #94a3b8; }
+
+.btn-review {
+    background: #f59e0b;
+    color: white;
+}
+.btn-review:hover { background: #d97706; }
+
 .question-text {
     font-size: 1.25rem;
     font-weight: 600;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     line-height: 1.6;
 }
+
 .options-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
+
 .option-label {
     display: flex;
     align-items: center;
@@ -40,60 +131,180 @@
     border-color: var(--primary);
     background: rgba(37, 99, 235, 0.05);
 }
+
 .option-input {
     margin-right: 1.25rem;
     transform: scale(1.3);
 }
-.timer-container {
-    position: fixed;
-    top: 6rem;
-    right: 2rem;
+
+.nav-panel {
     background: var(--surface);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.nav-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: #475569;
+}
+.nav-btn:hover { border-color: var(--primary); }
+
+/* NTA Status Colors */
+.status-not-visited { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
+.status-not-answered { background: #ef4444; border-color: #ef4444; color: white; border-radius: 50% 50% 0 0; }
+.status-answered { background: #10b981; border-color: #10b981; color: white; border-radius: 0 0 50% 50%; }
+.status-review { background: #8b5cf6; border-color: #8b5cf6; color: white; border-radius: 50%; }
+.status-answered-review { 
+    background: #8b5cf6; border-color: #8b5cf6; color: white; border-radius: 50%;
+    position: relative;
+}
+.status-answered-review::after {
+    content: "✔";
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #10b981;
+    color: white;
+    font-size: 0.6rem;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.legend-shape {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: white;
+    font-weight: bold;
+}
+
+.final-submit-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+    border: none;
     border-radius: var(--radius-md);
-    padding: 1rem 1.5rem;
-    box-shadow: var(--shadow-md);
-    z-index: 100;
+    cursor: pointer;
+    font-size: 1rem;
 }
-.timer-text {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #ef4444;
-    font-variant-numeric: tabular-nums;
-}
+.final-submit-btn:hover { background: #2563eb; }
+
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
 </style>
 
-<div class="container exam-container">
-    <div class="timer-container">
-        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Time Remaining</div>
-        <div class="timer-text" id="timer">--:--</div>
-    </div>
 
-    <form action="{{ url_for('take_exam', exam_id=exam.id) }}" method="POST" id="exam-form">
-        <h2 class="mb-8">{{ exam.title }}</h2>
-        
-        {% for q in questions %}
-        <div class="exam-card">
-            <div class="question-text">
-                <span style="font-size: 0.9rem; color: var(--primary); font-weight: bold; display: block; margin-bottom: 0.75rem;">Question {{ loop.index }}</span>
-                {{ q.question }}
+
+<div class="exam-layout" id="exam-main-container">
+    <div class="exam-main">
+        <form action="{{ url_for('take_exam', exam_id=exam.id) }}" method="POST" id="exam-form">
+            
+            <div class="exam-header">
+                <div>
+                    <h2 style="margin-bottom: 0.25rem; font-size: 1.25rem;">{{ exam.title }}</h2>
+                </div>
+                <div class="timer" id="timer">Ready</div>
             </div>
             
-            <div class="options-list">
-                {% for option in q.options %}
-                <label class="option-label">
-                    <input type="radio" name="question_{{ q.id }}" value="{{ option }}" class="option-input" required>
-                    <span>{{ option }}</span>
-                </label>
+            {% for q in questions %}
+            {% set q_index = loop.index %}
+            <div class="question-card" id="q-{{ q_index }}" style="display: none;">
+                <div class="question-text">
+                    <span style="font-size: 0.9rem; color: var(--primary); font-weight: bold; display: block; margin-bottom: 0.75rem;">Question {{ q_index }}</span>
+                    {{ q.question }}
+                </div>
+                
+                <div class="options-list">
+                    {% for option in q.options %}
+                    <label class="option-label">
+                        <input type="radio" name="question_{{ q.id }}" value="{{ option }}" class="option-input q-radio">
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="jee-actions-bar">
+                <button type="button" class="jee-btn btn-clear" onclick="clearResponse()">Clear Response</button>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="jee-btn btn-review" onclick="markForReviewAndNext()">Mark for Review & Next</button>
+                    <button type="button" class="jee-btn btn-save-next" onclick="saveAndNext()">Save & Next</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="exam-sidebar">
+        <div class="nav-panel">
+            <h3 style="margin-top: 0; font-size: 1rem; color: #475569; margin-bottom: 1rem;">Question Palette:</h3>
+            <div class="nav-grid">
+                {% for q in questions %}
+                <div class="nav-btn status-not-visited" id="nav-btn-{{ loop.index }}" onclick="goToQuestion({{ loop.index }})">
+                    {{ loop.index }}
+                </div>
                 {% endfor %}
             </div>
+
+            <div class="legend-grid">
+                <div class="legend-item"><div class="legend-shape status-not-visited">0</div> Not Visited</div>
+                <div class="legend-item"><div class="legend-shape status-not-answered">0</div> Not Answered</div>
+                <div class="legend-item"><div class="legend-shape status-answered">0</div> Answered</div>
+                <div class="legend-item"><div class="legend-shape status-review">0</div> Marked</div>
+                <div class="legend-item" style="grid-column: span 2;"><div class="legend-shape status-answered-review">0</div> Answered & Marked for Review</div>
+            </div>
+
+            <button type="button" class="final-submit-btn" onclick="submitExam()">Submit Exam</button>
         </div>
-        {% endfor %}
-        
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.25rem; font-size: 1.1rem; font-weight: 600;">
-            Submit Exam
-        </button>
-    </form>
+    </div>
 </div>
 
 <script>
@@ -101,21 +312,138 @@
     let timeRemaining = durationMins * 60;
     const timerDisplay = document.getElementById('timer');
     const examForm = document.getElementById('exam-form');
+    let timerInterval = null;
+    let hasExamStarted = true;
+    let isSubmitting = false;
+
+    // SPA Logic
+    const totalQuestions = {{ questions|length }};
+    let currentQuestionIndex = 1;
+    // States: 0=Not Visited, 1=Not Answered, 2=Answered, 3=Review, 4=Ans+Review
+    let questionStates = Array(totalQuestions + 1).fill(0);
+
+    function updateNavGridUI() {
+        // Update counts in legend
+        const counts = [0,0,0,0,0];
+        for(let i=1; i<=totalQuestions; i++) {
+            counts[questionStates[i]]++;
+            const btn = document.getElementById('nav-btn-' + i);
+            if(!btn) continue;
+            
+            btn.className = 'nav-btn'; // reset
+            if(questionStates[i] === 0) btn.classList.add('status-not-visited');
+            else if(questionStates[i] === 1) btn.classList.add('status-not-answered');
+            else if(questionStates[i] === 2) btn.classList.add('status-answered');
+            else if(questionStates[i] === 3) btn.classList.add('status-review');
+            else if(questionStates[i] === 4) btn.classList.add('status-answered-review');
+        }
+
+        // Update exact numbers on Legend shapes
+        document.querySelector('.legend-item .status-not-visited').innerText = counts[0];
+        document.querySelector('.legend-item .status-not-answered').innerText = counts[1];
+        document.querySelector('.legend-item .status-answered').innerText = counts[2];
+        document.querySelector('.legend-item .status-review').innerText = counts[3];
+        document.querySelector('.legend-item .status-answered-review').innerText = counts[4];
+    }
+
+    function showQuestion(idx) {
+        document.querySelectorAll('.question-card').forEach(q => q.style.display = 'none');
+        document.getElementById('q-' + idx).style.display = 'block';
+        
+        if (questionStates[idx] === 0) {
+            questionStates[idx] = 1; // Mark as "Not Answered" once visited
+        }
+        updateNavGridUI();
+    }
+
+    function goToQuestion(idx) {
+        currentQuestionIndex = idx;
+        showQuestion(currentQuestionIndex);
+    }
+
+    function hasAnswered(idx) {
+        return document.querySelector(`#q-${idx} input[type="radio"]:checked`) !== null;
+    }
+
+    // JEE Actions
+    window.saveAndNext = function() {
+        if (hasAnswered(currentQuestionIndex)) {
+            questionStates[currentQuestionIndex] = 2; // Answered
+        } else {
+            questionStates[currentQuestionIndex] = 1; // Not Answered
+        }
+        
+        if (currentQuestionIndex < totalQuestions) {
+            goToQuestion(currentQuestionIndex + 1);
+        } else {
+            updateNavGridUI();
+        }
+    };
+
+    window.markForReviewAndNext = function() {
+        if (hasAnswered(currentQuestionIndex)) {
+            questionStates[currentQuestionIndex] = 4; // Answered & Review
+        } else {
+            questionStates[currentQuestionIndex] = 3; // Not Answered & Review
+        }
+        
+        if (currentQuestionIndex < totalQuestions) {
+            goToQuestion(currentQuestionIndex + 1);
+        } else {
+            updateNavGridUI();
+        }
+    };
+
+    window.clearResponse = function() {
+        const radios = document.querySelectorAll(`#q-${currentQuestionIndex} input[type="radio"]`);
+        radios.forEach(r => r.checked = false);
+        questionStates[currentQuestionIndex] = 1; // Reverts to Not Answered
+        updateNavGridUI();
+    };
+
+    window.submitExam = function() {
+        if(confirm('Are you sure you want to submit your exam now? You cannot change your answers after submitting.')) {
+            isSubmitting = true;
+            examForm.submit();
+        }
+    };
+
+
+    // Timer & Fullscreen Logic
+    function formatInitialTimer() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    formatInitialTimer();
     
     function updateTimer() {
         const minutes = Math.floor(timeRemaining / 60);
         const seconds = Math.floor(timeRemaining % 60);
+        
         timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeRemaining <= 300) {
+            timerDisplay.style.animation = 'pulse 1s infinite alternate';
+        }
         
         if (timeRemaining <= 0) {
             clearInterval(timerInterval);
-            alert("Time is up! Submitting your exam.");
-            examForm.submit();
+            timerDisplay.textContent = "00:00";
+            if (!isSubmitting) {
+                isSubmitting = true;
+                alert("Time is up! Submitting your exam automatically.");
+                examForm.submit();
+            }
         }
         timeRemaining--;
     }
     
+    // Init state immediately
+    showQuestion(1);
+    hasExamStarted = true;
     updateTimer();
-    const timerInterval = setInterval(updateTimer, 1000);
+    timerInterval = setInterval(updateTimer, 1000);
+
 </script>
 {% endblock %}

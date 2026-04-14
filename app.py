@@ -78,6 +78,7 @@ def upload():
     if request.method == 'POST':
         title = request.form.get('title')
         duration = request.form.get('duration', 60)
+        exam_type = request.form.get('exam_type', 'general')
         
         if 'file' not in request.files:
             flash('No file part')
@@ -98,13 +99,14 @@ def upload():
                 flash('Could not read PDF contents.')
                 return redirect(request.url)
                 
-            questions_data = parse_questions_with_ai(pdf_text)
+            questions_data = parse_questions_with_ai(pdf_text, exam_type)
             
             if questions_data:
                 # Create Exam
                 new_exam = Exam(
                     title=title,
                     duration=float(duration),
+                    exam_type=exam_type,
                     created_by=session['user_id']
                 )
                 db.session.add(new_exam)

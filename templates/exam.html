@@ -397,6 +397,10 @@
             </div>
 
             <button type="button" class="final-submit-btn" onclick="submitExam()">Submit Exam</button>
+            <!-- Floating Submit Button -->
+            <button id="floating-submit-btn" class="jee-btn btn-save-next" style="position:fixed;bottom:2rem;right:2rem;z-index:1000;display:none;" onclick="submitExam()">Submit Test</button>
+            <!-- Toast Notification -->
+            <div id="toast" style="position:fixed;bottom:5rem;right:2rem;background:rgba(0,0,0,0.8);color:#fff;padding:1rem 1.5rem;border-radius:0.5rem;display:none;z-index:1000;"></div>
         </div>
     </div>
 </div>
@@ -451,9 +455,15 @@
     }
 
     function goToQuestion(idx) {
-        currentQuestionIndex = idx;
-        showQuestion(currentQuestionIndex);
-    }
+    // Remove active class from previous button
+    const prevActive = document.querySelector('.nav-btn.active');
+    if (prevActive) prevActive.classList.remove('active');
+    // Set new active button
+    const newBtn = document.getElementById('nav-btn-' + idx);
+    if (newBtn) newBtn.classList.add('active');
+    currentQuestionIndex = idx;
+    showQuestion(currentQuestionIndex);
+}
 
     function hasAnswered(idx) {
         const checkedRadio = document.querySelector(`#q-${idx} input[type="radio"]:checked`);
@@ -583,15 +593,30 @@
         timeRemaining--;
     }
     
+    // Show floating submit button after exam starts
+    function showFloatingButton() {
+        const btn = document.getElementById('floating-submit-btn');
+        if (btn) btn.style.display = 'block';
+    }
+    
+    // Toast notification helper
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+    
     document.getElementById('btn-start-exam').addEventListener('click', () => {
         if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(()=>{});
+            document.documentElement.requestFullscreen().catch(() => {});
         }
         
         document.getElementById('start-overlay').style.display = 'none';
         document.getElementById('exam-main-container').style.display = 'grid';
         hasExamStarted = true;
-        
+        showFloatingButton();
         // Init state
         showQuestion(1);
         

@@ -142,7 +142,8 @@ def upload():
                         options=q_data.get('options', []),
                         correct_answer=q_data.get('correct_answer'),
                         marks=q_data.get('marks', 1),
-                        difficulty=q_data.get('difficulty', 'medium').lower()
+                        difficulty=q_data.get('difficulty', 'medium').lower(),
+                        question_type=q_data.get('question_type', 'mcq').lower()
                     )
                     db.session.add(q)
                 
@@ -163,7 +164,8 @@ def take_exam(exam_id):
         
     exam = Exam.query.get_or_404(exam_id)
     questions = Question.query.filter_by(exam_id=exam.id).all()
-
+    # Sort questions: mcq first, then numerical
+    questions.sort(key=lambda x: 0 if x.question_type == 'mcq' else 1)
     
     if request.method == 'POST':
         user_id = session['user_id']

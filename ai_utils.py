@@ -18,8 +18,7 @@ def extract_text_from_pdf(pdf_path):
         with open(pdf_path, 'rb') as file:
             reader = PyPDF2.PdfReader(file)
             for page in reader.pages:
-                text += page.extract_text() + "
-"
+                text += page.extract_text() + "\n"
     except Exception as e:
         print(f"Error reading PDF: {e}")
     return text
@@ -32,45 +31,52 @@ def parse_questions_with_ai(text, exam_type='general'):
                 "question": "Sample Question 1 extracted from PDF",
                 "options": ["Option A", "Option B", "Option C", "Option D"],
                 "correct_answer": "Option A",
-                "marks": 1,
-                "difficulty": "medium"
+                "marks": 4,
+                "difficulty": "medium",
+                "question_type": "mcq"
             },
             {
-                "question": "Sample Question 2 extracted from PDF",
-                "options": ["True", "False"],
-                "correct_answer": "True",
-                "marks": 1,
-                "difficulty": "easy"
+                "question": "Sample Numerical Question extracted from PDF",
+                "options": [],
+                "correct_answer": "42.5",
+                "marks": 4,
+                "difficulty": "hard",
+                "question_type": "numerical"
             }
         ]
         
     if exam_type == 'jee':
         prompt_instruction = """
         You are an expert exam parser extracting from a JEE Mains paper. 
-        Your task is to extract Physics, Chemistry, and Mathematics multiple choice questions.
+        Your task is to extract Physics, Chemistry, and Mathematics questions, including both Multiple Choice Questions (MCQ) and Numerical Value type questions.
         If the paper is a JEE Mains paper, ensure extreme accuracy with formulas written in readable text or LaTeX.
         Analyze the question and assign a difficulty level ("easy", "medium", or "hard").
+        For numerical questions, return an empty array [] for "options" and set "question_type" to "numerical".
+        For mcq questions, set "question_type" to "mcq".
         Each object in the array should have the following exact schema:
         {
             "question": "The question text (Physics/Chemistry/Maths)",
             "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-            "correct_answer": "The exact string of the correct option.",
+            "correct_answer": "The exact string of the correct option or the numerical value.",
             "marks": 4,
-            "difficulty": "hard"
+            "difficulty": "hard",
+            "question_type": "mcq"
         }
         """
     else:
         prompt_instruction = """
         You are an expert exam parser. I will provide you with the raw text extracted from a question paper PDF.
-        Your task is to extract all the multiple choice questions and return them as a valid JSON array.
+        Your task is to extract all the questions and return them as a valid JSON array.
         Analyze the question and assign a difficulty level ("easy", "medium", or "hard").
+        Set "question_type" to "mcq" if options are present, or "numerical" if no options are present (in which case options should be []).
         Each object in the array should have the following exact schema:
         {
             "question": "The question text",
             "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
             "correct_answer": "The exact string of the correct option. Guess if not provided in the text.",
             "marks": 1,
-            "difficulty": "medium"
+            "difficulty": "medium",
+            "question_type": "mcq"
         }
         """
 
@@ -111,8 +117,7 @@ def chat_with_agent(message, history=None):
     formatted_history = ""
     for item in history[-6:]: # Keep last few messages for quick context
         role = "User" if item.get('role') == 'user' else "Agent"
-        formatted_history += f"{role}: {item.get('text', '')}
-"
+        formatted_history += f"{role}: {item.get('text', '')}\n"
     
     prompt = f"{prompt_instruction}\n\nRecent Conversation:\n{formatted_history}\nUser: {message}\nAgent:"
     

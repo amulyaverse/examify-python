@@ -30,6 +30,7 @@ class Question(db.Model):
     correct_answer = db.Column(db.String(500), nullable=False)
     marks = db.Column(db.Integer, default=1)
     difficulty = db.Column(db.String(20), default='medium')
+    question_type = db.Column(db.String(20), default='mcq')
 
 class Result(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -31,12 +31,14 @@
                     🌙
                 </button>
                 
-                {% if session.get('user_id') %}
-                    <a href="{{ url_for('upload') }}" class="btn btn-outline" style="padding: 0.5rem 1rem;">Upload</a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Logout</a>
-                {% else %}
-                    <a href="{{ url_for('auth') }}" class="btn btn-ghost">Login</a>
-                    <a href="{{ url_for('auth') }}" class="btn btn-primary">Sign Up Free</a>
+                {% if not request.path.startswith('/exam') %}
+                    {% if session.get('user_id') %}
+                        <a href="{{ url_for('upload') }}" class="btn btn-outline" style="padding: 0.5rem 1rem;">Upload</a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth') }}" class="btn btn-ghost">Login</a>
+                        <a href="{{ url_for('auth') }}" class="btn btn-primary">Sign Up Free</a>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

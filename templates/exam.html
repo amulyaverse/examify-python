@@ -413,6 +413,9 @@
 </div>
 
 <script>
+    // Remove chatbot widget on exam page to avoid overlay interference
+    const chatbotWidget = document.getElementById('chatbot-widget');
+    if (chatbotWidget) chatbotWidget.remove();
     const durationMins = {{ exam.duration }};
     let timeRemaining = durationMins * 60;
     const timerDisplay = document.getElementById('timer');

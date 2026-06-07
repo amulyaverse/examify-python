@@ -9,66 +9,72 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this in production
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///examify.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
+# Initialize DB
 db.init_app(app)
 
-# Create Database tables (simple fallback, in production use Flask-Migrate)
 with app.app_context():
     db.create_all()
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
     return render_template('index.html')
 
 @app.route('/auth', methods=['GET', 'POST'])
 def auth():
     if request.method == 'POST':
         action = request.form.get('action')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        name = request.form.get('name')
         
         if action == 'register':
-            if User.query.filter_by(email=email).first():
-                flash('Email already registered.')
+            name = request.form.get('name')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                flash('Email already exists')
                 return redirect(url_for('auth'))
-            hashed_pw = generate_password_hash(password, method='scrypt')
+                
+            hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
             new_user = User(name=name, email=email, password=hashed_pw)
             db.session.add(new_user)
             db.session.commit()
-            flash('Registration successful! Please login.')
+            flash('Registration successful, please login.')
             return redirect(url_for('auth'))
             
         elif action == 'login':
-            user = User.query.filter_by(email=email).first()
-            if not user or not check_password_hash(user.password, password):
-                flash('Invalid email or password.')
-                return redirect(url_for('auth'))
-            session['user_id'] = user.id
-            session['user_name'] = user.name
-            return redirect(url_for('dashboard'))
+            email = request.form.get('email')
+            password = request.form.get('password')
             
+            user = User.query.filter_by(email=email).first()
+            if user and check_password_hash(user.password, password):
+                session['user_id'] = user.id
+                session['user_name'] = user.name
+                return redirect(url_for('dashboard'))
+            else:
+                flash('Invalid email or password')
+                return redirect(url_for('auth'))
+                
     return render_template('auth.html')
 
 @app.route('/logout')
 def logout():
-    session.clear()
+    session.pop('user_id', None)
+    session.pop('user_name', None)
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('auth'))
-    exams = Exam.query.filter_by(created_by=session['user_id']).all()
-    results = Result.query.filter_by(user_id=session['user_id']).all()
-    return render_template('dashboard.html', exams=exams, results=results)
+        
+    user_id = session['user_id']
+    user = User.query.get(user_id)
+    my_exams = Exam.query.filter_by(created_by=user_id).order_by(Exam.created_at.desc()).all()
+    my_results = Result.query.filter_by(user_id=user_id).order_by(Result.created_at.desc()).all()
+    
+    return render_template('dashboard.html', user=user, exams=my_exams, results=my_results)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -77,12 +83,12 @@ def upload():
         
     if request.method == 'POST':
         title = request.form.get('title')
-        duration = request.form.get('duration', 60)
         exam_type = request.form.get('exam_type', 'general')
         
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)
+            
         file = request.files['file']
         if file.filename == '':
             flash('No selected file')
@@ -90,22 +96,37 @@ def upload():
             
         if file and file.filename.endswith('.pdf'):
             filename = secure_filename(file.filename)
-            pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(pdf_path)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(filepath)
             
-            # Extract questions using Gemini API
-            pdf_text = extract_text_from_pdf(pdf_path)
-            if not pdf_text.strip():
-                flash('Could not read PDF contents.')
-                return redirect(request.url)
+            # Process PDF
+            try:
+                text = extract_text_from_pdf(filepath)
+                questions_data = parse_questions_with_ai(text, exam_type)
                 
-            questions_data = parse_questions_with_ai(pdf_text, exam_type)
-            
-            if questions_data:
+                if not questions_data:
+                    flash('Failed to extract questions from the PDF. Please try a clearer document.')
+                    return redirect(request.url)
+                    
+                # Calculate duration automatically based on question difficulty
+                calculated_duration = 0
+                for q_data in questions_data:
+                    diff = q_data.get('difficulty', 'medium').lower()
+                    if diff == 'easy':
+                        calculated_duration += 1
+                    elif diff == 'hard':
+                        calculated_duration += 3
+                    else:
+                        calculated_duration += 2
+                
+                if calculated_duration == 0:
+                    calculated_duration = 60 # fallback
+
                 # Create Exam
                 new_exam = Exam(
                     title=title,
-                    duration=float(duration),
+                    duration=float(calculated_duration),
                     exam_type=exam_type,
                     created_by=session['user_id']
                 )
@@ -113,21 +134,24 @@ def upload():
                 db.session.commit()
                 
                 # Create Questions
+                total_marks = 0
                 for q_data in questions_data:
                     q = Question(
                         exam_id=new_exam.id,
                         question=q_data.get('question'),
                         options=q_data.get('options', []),
                         correct_answer=q_data.get('correct_answer'),
-                        marks=q_data.get('marks', 1)
+                        marks=q_data.get('marks', 1),
+                        difficulty=q_data.get('difficulty', 'medium').lower()
                     )
                     db.session.add(q)
-                db.session.commit()
                 
-                flash(f'Exam "{title}" successfully generated with {len(questions_data)} questions!')
+                db.session.commit()
+                flash('Exam created successfully!')
                 return redirect(url_for('dashboard'))
-            else:
-                flash('Failed to extract questions from the PDF. Please try a clearer document.')
+                
+            except Exception as e:
+                flash(f'An error occurred during processing: {e}')
                 return redirect(request.url)
                 
     return render_template('upload.html')
@@ -139,85 +163,104 @@ def take_exam(exam_id):
         
     exam = Exam.query.get_or_404(exam_id)
     questions = Question.query.filter_by(exam_id=exam.id).all()
+
     
     if request.method == 'POST':
         user_id = session['user_id']
-        score = 0
-        total_marks = 0
         answers = {}
+        correct = 0
+        wrong = 0
+        obtained = 0
+        total = 0
         
         for q in questions:
-            user_ans = request.form.get(f'question_{q.id}', '').strip()
-            answers[q.id] = user_ans
-            total_marks += q.marks
-            
-            # Simple exact match grading (case insensitive)
-            if user_ans.lower() == q.correct_answer.strip().lower():
-                score += q.marks
+            total += q.marks
+            ans = request.form.get(f'question_{q.id}')
+            answers[str(q.id)] = ans
+            if ans == q.correct_answer:
+                correct += 1
+                obtained += q.marks
+            else:
+                wrong += 1
                 
-        # Save Result
+        percentage = (obtained / total * 100) if total > 0 else 0
+        
         result = Result(
             user_id=user_id,
             exam_id=exam.id,
-            score=score,
-            total_marks=total_marks,
+            obtained_score=obtained,
+            total_score=total,
+            correct_answers=correct,
+            wrong_answers=wrong,
+            percentage=percentage,
             answers=answers
         )
         db.session.add(result)
         db.session.commit()
         
-        return redirect(url_for('result', result_id=result.id))
+        return redirect(url_for('view_result', result_id=result.id))
         
     return render_template('exam.html', exam=exam, questions=questions)
 
 @app.route('/result/<int:result_id>')
-def result(result_id):
+def view_result(result_id):
     if 'user_id' not in session:
         return redirect(url_for('auth'))
+        
     result = Result.query.get_or_404(result_id)
+    if result.user_id != session['user_id']:
+        flash('Unauthorized')
+        return redirect(url_for('dashboard'))
+        
     exam = Exam.query.get(result.exam_id)
-    questions = Question.query.filter_by(exam_id=exam.id).all()
-    
-    # Calculate detailed stats
-    correct = 0
-    incorrect = 0
-    unanswered = 0
-    
-    for q in questions:
-        user_ans = result.answers.get(str(q.id), '').strip()
-        if not user_ans:
-            unanswered += 1
-        elif user_ans.lower() == q.correct_answer.strip().lower():
-            correct += 1
-        else:
-            incorrect += 1
-            
-    return render_template(
-        'result.html',
-        result=result,
-        exam=exam,
-        questions=questions,
-        correct=correct,
-        incorrect=incorrect,
-        unanswered=unanswered
-    )
+    return render_template('result.html', result=result, exam=exam)
 
 @app.route('/analysis/<int:result_id>')
-def analysis(result_id):
+def view_analysis(result_id):
     if 'user_id' not in session:
         return redirect(url_for('auth'))
+        
     result = Result.query.get_or_404(result_id)
+    if result.user_id != session['user_id']:
+        flash('Unauthorized')
+        return redirect(url_for('dashboard'))
+        
     exam = Exam.query.get(result.exam_id)
-    questions = Question.query.filter_by(exam_id=exam.id).all()
-    return render_template('analysis.html', result=result, exam=exam, questions=questions)
+    
+    # Generate dummy complex analytical data for the new dashboard
+    analysis_data = {
+        'percentile': 88,
+        'avg_score': int(result.total_score * 0.65),
+        'topper_score': int(result.total_score * 0.95),
+        'time_taken_mins': 45,
+        'accuracy': int(result.percentage),
+        'improvement_potential': min(100, int(result.percentage) + 16),
+        'weak_areas': [
+            {'topic': 'Quadratic Equations', 'accuracy': 40, 'time_multiplier': 2.5, 'reason': 'Mistakes in formula application.'},
+            {'topic': 'Kinematics', 'accuracy': 55, 'time_multiplier': 1.8, 'reason': 'Calculation errors under time pressure.'}
+        ],
+        'mistake_patterns': {
+            'Conceptual': 2,
+            'Calculation': 4,
+            'Silly Mistakes': 3,
+            'Time Pressure': 1,
+            'Guesswork': 2
+        },
+        'study_plan': [
+            {'day': 'Day 1', 'task': 'Quadratic Equations Revision + 20 Practice Qs'},
+            {'day': 'Day 2', 'task': 'Kinematics formula memorization + 10 Timed Qs'}
+        ]
+    }
+    
+    return render_template('analysis.html', result=result, exam=exam, analytics=analysis_data)
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    if 'user_id' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    
     data = request.get_json()
-    message = data.get('message')
+    if not data:
+        return jsonify({"error": "Invalid request"}), 400
+        
+    message = data.get('message', '')
     history = data.get('history', [])
     
     if not message:

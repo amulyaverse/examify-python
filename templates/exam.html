@@ -522,7 +522,31 @@
     };
 
     window.submitExam = function() {
-        if(confirm('Are you sure you want to submit your exam now? You cannot change your answers after submitting.')) {
+        let unanswered = 0;
+        let answered = 0;
+        let marked = 0;
+        for(let i=1; i<=totalQuestions; i++) {
+            if (questionStates[i] === 2 || questionStates[i] === 4) {
+                answered++;
+            } else {
+                unanswered++;
+            }
+            if (questionStates[i] === 3 || questionStates[i] === 4) {
+                marked++;
+            }
+        }
+        
+        let confirmMsg = `Are you sure you want to submit your exam now?\n\n`;
+        confirmMsg += `• Answered: ${answered}\n`;
+        confirmMsg += `• Unanswered: ${unanswered}\n`;
+        confirmMsg += `• Marked for Review: ${marked}\n`;
+        
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = Math.floor(timeRemaining % 60);
+        confirmMsg += `• Time Remaining: ${minutes}m ${seconds}s\n\n`;
+        confirmMsg += `You cannot change your answers after submitting.`;
+        
+        if(confirm(confirmMsg)) {
             isSubmitting = true;
             examForm.submit();
         }

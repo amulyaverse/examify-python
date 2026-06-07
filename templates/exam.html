@@ -207,23 +207,29 @@
     padding-right: 0.5rem;
 }
 
-.nav-btn {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: var(--radius-sm);
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    color: #475569;
-}
-.nav-btn:hover { border-color: var(--primary); }
+    .nav-btn {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--radius-sm);
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #475569;
+    }
+    .nav-btn:hover { border-color: var(--primary); }
+    .nav-btn.active {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 0 8px rgba(59,130,246,0.6);
+    }
 
 /* NTA Status Colors */
 .status-not-visited { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
@@ -291,6 +297,7 @@
 .final-submit-btn:hover { background: #2563eb; }
 
 @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+    .chatbot-widget { display: none; }
 </style>
 
 <div id="start-overlay" class="start-overlay">

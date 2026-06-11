@@ -40,6 +40,11 @@
                         <a href="{{ url_for('auth') }}" class="btn btn-primary">Sign Up Free</a>
                     {% endif %}
                 {% endif %}
+{% if request.path.startswith('/exam') %}
+{% if exam %}
+<span class="exam-name" style="margin-left:1rem;font-weight:600;color:var(--text-primary);">{{ exam.title }}</span>
+{% endif %}
+{% endif %}
             </div>
         </div>
     </nav>

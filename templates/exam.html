@@ -319,9 +319,6 @@
             
             <div class="exam-header">
                 <div>
-{% if exam.exam_type|lower == 'jee' %}
-    <img src="{{ url_for('static', filename='nta_logo.png') }}" alt="NTA Logo" style="height:40px; margin-right:0.5rem;">
-{% endif %}
 <h2 style="margin-bottom: 0.25rem; font-size: 1.25rem;">{{ exam.title }} <span class="text-muted">({{ exam.exam_type|upper }})</span></h2>
                 </div>
                 <div class="timer" id="timer">Ready</div>

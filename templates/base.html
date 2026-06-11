@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Examify - AI-Powered Exam Platform{% endblock %}</title>
+    <title>{% block title %}Exam Platform{% endblock %}</title>
     <!-- Modern Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Main Stylesheet -->
@@ -17,7 +17,7 @@
             <a href="{{ url_for('index') }}" class="logo">
                 <span>🎓</span> Examify
             </a>
-            
+            {% if not request.path.startswith('/exam') %}
             <div class="nav-links">
                 <a href="{{ url_for('index') }}#features">Features</a>
                 <a href="{{ url_for('index') }}#how-it-works">How It Works</a>
@@ -25,7 +25,7 @@
                 <a href="{{ url_for('dashboard') }}">Dashboard</a>
                 {% endif %}
             </div>
-            
+            {% endif %}
             <div class="nav-actions">
                 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Dark Mode">
                     🌙
@@ -68,7 +68,7 @@
     <!-- Footer -->
     <footer style="background-color: var(--surface); padding: 4rem 0; border-top: 1px solid var(--border); margin-top: 4rem;">
         <div class="container text-center text-muted">
-            <p>&copy; 2026 Examify. All rights reserved.</p>
+            <p>© 2026. All rights reserved.</p>
         </div>
     </footer>
 
@@ -77,21 +77,21 @@
         <div id="chatbot-container" class="chatbot-container hidden">
             <div class="chatbot-header">
                 <div class="chatbot-title">
-                    <span style="font-size: 1.25rem;">✨</span> Examify AI
+                    <span style="font-size: 1.25rem;">✨ Examopedia</span>
                 </div>
                 <button id="chatbot-close" class="chatbot-close" aria-label="Close Chat">✕</button>
             </div>
             <div id="chatbot-messages" class="chatbot-messages">
                 <div class="chat-message ai">
-                    Hello! I'm your Examify AI assistant. How can I help you today?
+                    Hello! I'm your AI assistant. How can I help you today?
                 </div>
             </div>
             <div class="chatbot-input-area">
-                <input type="text" id="chatbot-input" placeholder="Ask about Examify..." aria-label="Chat input" autocomplete="off">
+                <input type="text" id="chatbot-input" placeholder="Ask a question..." aria-label="Chat input" autocomplete="off">
                 <button id="chatbot-send" class="chatbot-send" aria-label="Send message">➤</button>
             </div>
         </div>
-        <button id="chatbot-toggle" class="chatbot-toggle" aria-label="Open AI Chat">
+        <button id="chatbot-toggle" class="chatbot-toggle" aria-label="Open Examopedia Chat">
             <span class="chat-icon">💬</span>
         </button>
     </div>
